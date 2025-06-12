@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Quicken Mobile">
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiUXVpY2tlbiBNb2JpbGUiLCJzaG9ydF9uYW1lIjoiUXVpY2tlbiIsInN0YXJ0X3VybCI6Ii4vIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiIzNiODJmNiIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSFpwWlhkQ2IzZzlJakFnTUNBek1qQXpNakFpUGlBOGNtVmpkQ0I0UFNJeU5DSWdlVDBpTWpRaUlIZHBaSFJvUFNJeU56SWlJR2hsYVdkb2REMGlNamN5SWlCeWVEMGlNVFlpSUdacGJHdzlJaU16WWpneVpqWWlMejRnUEhCaGRHZ2daRDBpVFRZMElEUXhMakZETmpndU5TQTBNUzR4SUFFM01TSXpOeTR4SURjM0lETXpMamxETnprZ016QXVNeUE0TUNBek1pNHpJRGd3SURNMFEwZ3dOakVDSURFek5pQXlOaUF4TXpZZ01qWWdNVE0ySWo0OEwzQmhkR2crSUR3dmMzWm5QZz09IiwidHlwZSI6ImltYWdlL3N2Zyt4bWwiLCJzaXplcyI6IjE5MngxOTIifSx7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjRiV3h1Y3owaWFIUjBjRG92TDNkM2R5NTNNeTUyY21jdk1qQXdNQzl6ZG1jaUlIWnBaWGRDYjNnOUlqQWdNQ0F6TWpBek1qQWlQaUE4Y21WamRDQjRQU0l5TkNJZ2VUMGlNalFpSUhkcFpIUm9QU0l5TnpJaUlHaGxhV2RvZEQwaU1qY3lJaUJ5ZUQwaU1UWWlJR1pwYkd3OUlpTXpZamhpWm1ZMklpOCtJRHh3WVhSb0lHUTlJazB4TXpBZ01UTXdUREU0SXpFeE55NDBUREUwTXpBeE5qQXVOa3d4TlRBdU5VTXhOelJnTVRaVWJERTJNUzQ0UXpFMk5EdXpOaTR6SURFMk5DNHpOMkEwTkNBek55NHpJRFEwSURNNFZIUnNNVFl6TGpWRGFERTJOUzQ0SURFMk9DQXhOamd1T0RFeE5qZ3VPQ0F4TnpJdU56SXVNa014TnpZdU5qSTJMakl1TWtBeE9EVWVJRGU0TURFNFEwRXhNa3d4TWpkYU1qSTRSNk0yTWtOVGMwOVZNdUF1VGtwZzhBcmJHa0FxRGNNY0xnSWpGQTF6VmpNa0V6ZzNMalJaYlZYQXF6eDN6Y2xIdndpcXRrNGZOVEVBcjdBQ1ZIVFJwRnNqZE5Obzg1Y0Y1WTJOJmFwOGQiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCIsInNpemVzIjoiNTEyeDUxMiJ9XX0=">
+    <title>Quicken Mobile</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
+        .lucide { width: 1em; height: 1em; stroke: currentColor; stroke-width: 2; fill: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Lucide icons as SVG components
+        const Upload = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7,10 12,15 17,10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+        );
+
+        const Search = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+            </svg>
+        );
+
+        const TrendingUp = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <polyline points="22,7 13.5,15.5 8.5,10.5 2,17"/>
+                <polyline points="16,7 22,7 22,13"/>
+            </svg>
+        );
+
+        const TrendingDown = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <polyline points="22,17 13.5,8.5 8.5,13.5 2,7"/>
+                <polyline points="16,17 22,17 22,11"/>
+            </svg>
+        );
+
+        const DollarSign = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        );
+
+        const Filter = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+            </svg>
+        );
+
+        const RefreshCw = ({ className }) => (
+            <svg className={`lucide ${className || ''}`} viewBox="0 0 24 24">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M3 21v-5h5"/>
+            </svg>
+        );
+
+        const Settings = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        );
+
+        const EyeOff = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                <line x1="2" y1="2" x2="22" y2="22"/>
+            </svg>
+        );
+
+        const Eye = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        );
+
+        const QuickenMobileApp = () => {
+            const [accounts, setAccounts] = useState([]);
+            const [transactions, setTransactions] = useState([]);
+            const [selectedAccount, setSelectedAccount] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [showActiveOnly, setShowActiveOnly] = useState(false);
+            const [isLoading, setIsLoading] = useState(false);
+            const [hiddenAccounts, setHiddenAccounts] = useState(new Set());
+            const [showAccountManager, setShowAccountManager] = useState(false);
+
+            // Sample data for demo purposes
+            const sampleData = {
+                accounts: [
+                    { name: 'Checking Account', balance: 5420.50, lastActivity: '2024-06-10', type: 'Bank', active: true },
+                    { name: 'Business Checking', balance: 12850.75, lastActivity: '2024-06-11', type: 'Bank', active: true },
+                    { name: 'Savings Account', balance: 25000.00, lastActivity: '2024-06-01', type: 'Bank', active: false },
+                    { name: 'Credit Card', balance: -1250.30, lastActivity: '2024-06-09', type: 'Credit', active: true },
+                    { name: 'Business Credit', balance: -750.00, lastActivity: '2024-06-08', type: 'Credit', active: true },
+                    { name: 'Investment Account', balance: 45000.00, lastActivity: '2024-05-15', type: 'Investment', active: false },
+                    { name: 'Old Savings (CLOSED)', balance: 0.00, lastActivity: '2022-01-15', type: 'Bank', active: false },
+                    { name: 'Certificate of Deposit', balance: 10000.00, lastActivity: '2023-12-15', type: 'Investment', active: false },
+                ],
+                transactions: [
+                    { date: '2024-06-11', description: 'Client Payment - Invoice #1234', amount: 2500.00, account: 'Business Checking', category: 'Income' },
+                    { date: '2024-06-10', description: 'Grocery Store', amount: -85.43, account: 'Checking Account', category: 'Food' },
+                    { date: '2024-06-10', description: 'Gas Station', amount: -45.20, account: 'Credit Card', category: 'Auto' },
+                    { date: '2024-06-09', description: 'Office Supplies', amount: -127.50, account: 'Business Credit', category: 'Business Expense' },
+                    { date: '2024-06-08', description: 'Rent Payment', amount: -1500.00, account: 'Checking Account', category: 'Housing' },
+                ]
+            };
+
+            const parseQIF = (content) => {
+                const lines = content.split('\n');
+                const parsedAccounts = [];
+                const parsedTransactions = [];
+                let currentAccount = null;
+                let currentTransaction = {};
+                let inTransactionSection = false;
+
+                const parseAmount = (amountStr) => {
+                    if (!amountStr) return 0;
+                    let cleanAmount = amountStr.replace(/[£$€,]/g, '');
+                    if (cleanAmount.includes('(') && cleanAmount.includes(')')) {
+                        cleanAmount = '-' + cleanAmount.replace(/[()]/g, '');
+                    }
+                    const parsed = parseFloat(cleanAmount);
+                    return isNaN(parsed) ? 0 : parsed;
+                };
+
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return '';
+                    const dateFormats = [
+                        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/,
+                        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})/
+                    ];
+                    
+                    for (const format of dateFormats) {
+                        const match = dateStr.match(format);
+                        if (match) {
+                            const day = match[1].padStart(2, '0');
+                            const month = match[2].padStart(2, '0');
+                            let year = match[3];
+                            if (year.length === 2) {
+                                year = parseInt(year) > 50 ? '19' + year : '20' + year;
+                            }
+                            return `${year}-${month}-${day}`;
+                        }
+                    }
+                    return dateStr;
+                };
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    
+                    if (line.startsWith('!Account')) {
+                        currentAccount = { 
+                            name: '', 
+                            type: 'Bank', 
+                            balance: 0, 
+                            lastActivity: '', 
+                            active: true,
+                            transactions: [] 
+                        };
+                        inTransactionSection = false;
+                    } else if (line.startsWith('N') && currentAccount && !inTransactionSection) {
+                        currentAccount.name = line.substring(1);
+                    } else if (line.startsWith('T') && currentAccount && !inTransactionSection) {
+                        currentAccount.type = line.substring(1) || 'Bank';
+                    } else if (line.startsWith('B') && currentAccount && !inTransactionSection) {
+                        currentAccount.balance = parseAmount(line.substring(1));
+                    } else if (line === '^' && currentAccount && !inTransactionSection) {
+                        parsedAccounts.push(currentAccount);
+                        inTransactionSection = true;
+                    } else if (line.startsWith('!Type:')) {
+                        inTransactionSection = true;
+                    } else if (inTransactionSection) {
+                        if (line.startsWith('D')) {
+                            currentTransaction.date = formatDate(line.substring(1));
+                        } else if (line.startsWith('T')) {
+                            currentTransaction.amount = parseAmount(line.substring(1));
+                        } else if (line.startsWith('P')) {
+                            currentTransaction.description = line.substring(1);
+                        } else if (line.startsWith('L')) {
+                            currentTransaction.category = line.substring(1);
+                        } else if (line.startsWith('M')) {
+                            if (currentTransaction.description) {
+                                currentTransaction.description += ' - ' + line.substring(1);
+                            } else {
+                                currentTransaction.description = line.substring(1);
+                            }
+                        } else if (line === '^' && Object.keys(currentTransaction).length > 0) {
+                            if (currentAccount) {
+                                currentTransaction.account = currentAccount.name;
+                                parsedTransactions.push({ ...currentTransaction });
+                                
+                                if (currentTransaction.date && (!currentAccount.lastActivity || currentTransaction.date > currentAccount.lastActivity)) {
+                                    currentAccount.lastActivity = currentTransaction.date;
+                                }
+                            }
+                            currentTransaction = {};
+                        }
+                    }
+                }
+
+                parsedAccounts.forEach(account => {
+                    if (account.balance === 0) {
+                        const accountTransactions = parsedTransactions.filter(t => t.account === account.name);
+                        account.balance = accountTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+                    }
+                    
+                    if (account.lastActivity) {
+                        const lastActivityDate = new Date(account.lastActivity);
+                        const sixMonthsAgo = new Date();
+                        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+                        account.active = lastActivityDate > sixMonthsAgo;
+                    }
+                });
+
+                return { accounts: parsedAccounts, transactions: parsedTransactions };
+            };
+
+            const handleFileUpload = (event) => {
+                const files = Array.from(event.target.files);
+                if (files.length > 0) {
+                    setIsLoading(true);
+                    
+                    let allAccounts = [];
+                    let allTransactions = [];
+                    let filesProcessed = 0;
+                    
+                    files.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            try {
+                                const content = e.target.result;
+                                const parsed = parseQIF(content);
+                                
+                                parsed.accounts.forEach(newAccount => {
+                                    const existingIndex = allAccounts.findIndex(acc => acc.name === newAccount.name);
+                                    if (existingIndex >= 0) {
+                                        allAccounts[existingIndex] = newAccount;
+                                    } else {
+                                        allAccounts.push(newAccount);
+                                    }
+                                });
+                                
+                                parsed.transactions.forEach(newTransaction => {
+                                    const isDuplicate = allTransactions.some(existing => 
+                                        existing.account === newTransaction.account &&
+                                        existing.date === newTransaction.date &&
+                                        existing.amount === newTransaction.amount &&
+                                        existing.description === newTransaction.description
+                                    );
+                                    if (!isDuplicate) {
+                                        allTransactions.push(newTransaction);
+                                    }
+                                });
+                                
+                                filesProcessed++;
+                                
+                                if (filesProcessed === files.length) {
+                                    setAccounts(allAccounts);
+                                    setTransactions(allTransactions);
+                                    setIsLoading(false);
+                                    event.target.value = '';
+                                }
+                            } catch (error) {
+                                console.error('Error parsing QIF file:', error);
+                                setIsLoading(false);
+                                alert(`Error parsing QIF file ${file.name}. Please check the file format.`);
+                                event.target.value = '';
+                            }
+                        };
+                        reader.readAsText(file);
+                    });
+                }
+            };
+
+            const triggerFileInput = () => {
+                const fileInput = document.getElementById('qif-file-input') || document.getElementById('qif-file-input-header');
+                if (fileInput) {
+                    fileInput.click();
+                }
+            };
+
+            const toggleAccountVisibility = (accountName) => {
+                const newHiddenAccounts = new Set(hiddenAccounts);
+                if (newHiddenAccounts.has(accountName)) {
+                    newHiddenAccounts.delete(accountName);
+                } else {
+                    newHiddenAccounts.add(accountName);
+                }
+                setHiddenAccounts(newHiddenAccounts);
+                
+                try {
+                    localStorage.setItem('hiddenAccounts', JSON.stringify([...newHiddenAccounts]));
+                } catch (e) {
+                    console.log('LocalStorage not available');
+                }
+            };
+
+            const autoHideInactiveAccounts = () => {
+                const now = new Date();
+                const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                
+                const inactiveAccounts = accounts
+                    .filter(account => {
+                        const lastActivity = new Date(account.lastActivity);
+                        return lastActivity < oneYearAgo || account.balance === 0;
+                    })
+                    .map(account => account.name);
+                
+                const newHiddenAccounts = new Set([...hiddenAccounts, ...inactiveAccounts]);
+                setHiddenAccounts(newHiddenAccounts);
+                try {
+                    localStorage.setItem('hiddenAccounts', JSON.stringify([...newHiddenAccounts]));
+                } catch (e) {
+                    console.log('LocalStorage not available');
+                }
+            };
+
+            const showAllAccounts = () => {
+                setHiddenAccounts(new Set());
+                try {
+                    localStorage.removeItem('hiddenAccounts');
+                } catch (e) {
+                    console.log('LocalStorage not available');
+                }
+            };
+
+            const loadSampleData = () => {
+                setAccounts(sampleData.accounts);
+                setTransactions(sampleData.transactions);
+            };
+
+            const getTotalNetWorth = () => {
+                return accounts
+                    .filter(account => !hiddenAccounts.has(account.name))
+                    .reduce((total, account) => total + account.balance, 0);
+            };
+
+            const formatCurrency = (amount) => {
+                const isNegative = amount < 0;
+                const formatted = new Intl.NumberFormat('en-GB', {
+                    style: 'currency',
+                    currency: 'GBP'
+                }).format(Math.abs(amount));
+                return isNegative ? `-${formatted}` : formatted;
+            };
+
+            const formatDateUK = (dateStr) => {
+                if (!dateStr) return '';
+                try {
+                    const date = new Date(dateStr);
+                    if (isNaN(date.getTime())) return dateStr;
+                    
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = String(date.getFullYear()).slice(-2);
+                    
+                    return `${day}/${month}/${year}`;
+                } catch (e) {
+                    return dateStr;
+                }
+            };
+
+            const filteredAccounts = accounts.filter(account => {
+                const matchesSearch = account.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesFilter = !showActiveOnly || account.active;
+                const isNotHidden = !hiddenAccounts.has(account.name);
+                return matchesSearch && matchesFilter && isNotHidden;
+            });
+
+            const getRecentTransactions = () => {
+                return transactions
+                    .filter(t => {
+                        if (selectedAccount) {
+                            return t.account === selectedAccount.name;
+                        }
+                        return !hiddenAccounts.has(t.account);
+                    })
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 10);
+            };
+
+            // Load hidden accounts from localStorage on mount
+            useEffect(() => {
+                try {
+                    const savedHiddenAccounts = localStorage.getItem('hiddenAccounts');
+                    if (savedHiddenAccounts) {
+                        setHiddenAccounts(new Set(JSON.parse(savedHiddenAccounts)));
+                    }
+                } catch (e) {
+                    console.log('LocalStorage not available');
+                }
+            }, []);
+
+            // Account Manager Screen
+            if (showAccountManager) {
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="bg-white shadow-sm p-4">
+                            <div className="max-w-md mx-auto flex items-center justify-between">
+                                <button
+                                    onClick={() => setShowAccountManager(false)}
+                                    className="text-blue-500 text-sm font-medium"
+                                >
+                                    ← Back
+                                </button>
+                                <h1 className="font-semibold text-gray-800">Manage Accounts</h1>
+                                <div className="w-12"></div>
+                            </div>
+                        </div>
+                        
+                        <div className="max-w-md mx-auto p-4 space-y-4">
+                            <div className="bg-white rounded-lg shadow-sm p-4">
+                                <h2 className="font-semibold text-gray-800 mb-3">Quick Actions</h2>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={autoHideInactiveAccounts}
+                                        className="w-full bg-orange-500 text-white py-2 px-4 rounded-lg text-sm hover:bg-orange-600"
+                                    >
+                                        Hide Inactive Accounts
+                                    </button>
+                                    <button
+                                        onClick={showAllAccounts}
+                                        className="w-full bg-green-500 text-white py-2 px-4 rounded-lg text-sm hover:bg-green-600"
+                                    >
+                                        Show All Accounts
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow-sm">
+                                <div className="p-4 border-b">
+                                    <h2 className="font-semibold text-gray-800">All Accounts ({accounts.length})</h2>
+                                    <p className="text-sm text-gray-500">Tap to show/hide accounts</p>
+                                </div>
+                                <div className="divide-y max-h-96 overflow-y-auto">
+                                    {accounts.map((account, index) => {
+                                        const isHidden = hiddenAccounts.has(account.name);
+                                        return (
+                                            <div
+                                                key={index}
+                                                onClick={() => toggleAccountVisibility(account.name)}
+                                                className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-2">
+                                                        <p className={`font-medium ${isHidden ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                                                            {account.name}
+                                                        </p>
+                                                        {account.active && !isHidden && (
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs text-gray-500">
+                                                    {account.type} • {formatDateUK(account.lastActivity)} • {formatCurrency(account.balance)}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    {isHidden ? (
+                                                        <EyeOff className="w-5 h-5 text-gray-400" />
+                                                    ) : (
+                                                        <Eye className="w-5 h-5 text-blue-500" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-50 rounded-lg p-4">
+                                <div className="text-sm text-blue-800">
+                                    <p><strong>Visible:</strong> {filteredAccounts.length} accounts</p>
+                                    <p><strong>Hidden:</strong> {hiddenAccounts.size} accounts</p>
+                                    <p><strong>Net Worth (visible):</strong> {formatCurrency(getTotalNetWorth())}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (accounts.length === 0) {
+                return (
+                    <div className="min-h-screen bg-gray-50 p-4">
+                        <div className="max-w-md mx-auto">
+                            <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+                                <DollarSign className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                                <h1 className="text-2xl font-bold text-gray-800 mb-2">Quicken Mobile</h1>
+                                <p className="text-gray-600 mb-6">Import your Quicken data to get started</p>
+                                
+                                <div className="space-y-4">
+                                    <button
+                                        onClick={triggerFileInput}
+                                        disabled={isLoading}
+                                        className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-600 disabled:opacity-50"
+                                    >
+                                        {isLoading ? (
+                                            <RefreshCw className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Upload className="w-5 h-5" />
+                                        )}
+                                        <span>{isLoading ? 'Loading...' : 'Import QIF Files'}</span>
+                                    </button>
+                                    
+                                    <input
+                                        id="qif-file-input"
+                                        type="file"
+                                        accept=".qif,.QIF,*"
+                                        onChange={handleFileUpload}
+                                        style={{display: 'none'}}
+                                        disabled={isLoading}
+                                        multiple
+                                    />
+                                </div>
+                                
+                                <div className="mt-6 text-sm text-gray-500">
+                                    <p>Export your Quicken data as QIF format:</p>
+                                    <p className="font-mono text-xs mt-1">File → Export → QIF Files</p>
+                                    <p className="text-xs mt-2">💡 You can select multiple QIF files to merge them!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (selectedAccount) {
+                const accountTransactions = transactions
+                    .filter(t => t.account === selectedAccount.name)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="bg-white shadow-sm p-4">
+                            <div className="max-w-md mx-auto flex items-center justify-between">
+                                <button
+                                    onClick={() => setSelectedAccount(null)}
+                                    className="text-blue-500 text-sm font-medium"
+                                >
+                                    ← Back
+                                </button>
+                                <h1 className="font-semibold text-gray-800 truncate">{selectedAccount.name}</h1>
+                                <div className="w-12"></div>
+                            </div>
+                        </div>
+                        
+                        <div className="max-w-md mx-auto p-4">
+                            <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
+                                <div className="text-center">
+                                    <p className="text-sm text-gray-600">Current Balance</p>
+                                    <p className={`text-2xl font-bold ${selectedAccount.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {formatCurrency(selectedAccount.balance)}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">Last updated: {formatDateUK(selectedAccount.lastActivity)}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg shadow-sm">
+                                <div className="p-4 border-b">
+                                    <h2 className="font-semibold text-gray-800">Recent Transactions</h2>
+                                </div>
+                                <div className="divide-y">
+                                    {accountTransactions.length > 0 ? accountTransactions.map((transaction, index) => (
+                                        <div key={index} className="p-4 flex justify-between items-center">
+                                            <div className="flex-1">
+                                                <p className="font-medium text-gray-800 text-sm">{transaction.description}</p>
+                                                <p className="text-xs text-gray-500">{formatDateUK(transaction.date)} • {transaction.category}</p>
+                                            </div>
+                                            <div className={`font-semibold ${transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {formatCurrency(transaction.amount)}
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <div className="p-4 text-center text-gray-500">
+                                            <p>No transactions found for this account</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <div className="bg-white shadow-sm p-4">
+                        <div className="max-w-md mx-auto">
+                            <div className="flex items-center justify-between mb-4">
+                                <h1 className="text-lg font-bold text-gray-800">Quicken Mobile</h1>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => setShowAccountManager(true)}
+                                        className="text-blue-500 p-1 hover:bg-blue-50 rounded"
+                                        title="Manage Accounts"
+                                    >
+                                        <Settings className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={triggerFileInput}
+                                        className="text-blue-500 p-1 hover:bg-blue-50 rounded"
+                                        title="Import QIF Files"
+                                    >
+                                        <RefreshCw className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Hidden file input for mobile compatibility */}
+                            <input
+                                id="qif-file-input-header"
+                                type="file"
+                                accept=".qif,.QIF,*"
+                                onChange={handleFileUpload}
+                                style={{display: 'none'}}
+                                multiple
+                            />
+                            
+                            {/* Net Worth Card */}
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+                                <p className="text-sm opacity-90">Total Net Worth ({filteredAccounts.length} accounts)</p>
+                                <p className="text-2xl font-bold">{formatCurrency(getTotalNetWorth())}</p>
+                                {hiddenAccounts.size > 0 && (
+                                    <p className="text-xs opacity-75 mt-1">{hiddenAccounts.size} accounts hidden</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Search and Filter */}
+                    <div className="max-w-md mx-auto p-4">
+                        <div className="bg-white rounded-lg shadow-sm p-3 mb-4">
+                            <div className="flex items-center space-x-2 mb-3">
+                                <div className="flex-1 relative">
+                                    <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search accounts..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                    <Filter className="w-4 h-4 text-gray-500" />
+                                    <label className="flex items-center space-x-2 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            checked={showActiveOnly}
+                                            onChange={(e) => setShowActiveOnly(e.target.checked)}
+                                            className="rounded"
+                                        />
+                                        <span>Active only</span>
+                                    </label>
+                                </div>
+                                <button
+                                    onClick={() => setShowAccountManager(true)}
+                                    className="text-blue-500 text-sm hover:underline"
+                                >
+                                    Manage
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Accounts List */}
+                        <div className="bg-white rounded-lg shadow-sm divide-y">
+                            {filteredAccounts.map((account, index) => (
+                                <div
+                                    key={index}
+                                    onClick={() => setSelectedAccount(account)}
+                                    className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+                                >
+                                    <div className="flex-1">
+                                        <div className="flex items-center space-x-2">
+                                            <p className="font-medium text-gray-800">{account.name}</p>
+                                            {account.active && (
+                                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500">{account.type} • {formatDateUK(account.lastActivity)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`font-semibold ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {formatCurrency(account.balance)}
+                                        </p>
+                                        {account.balance >= 0 ? (
+                                            <TrendingUp className="w-4 h-4 text-green-500 ml-auto" />
+                                        ) : (
+                                            <TrendingDown className="w-4 h-4 text-red-500 ml-auto" />
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Recent Activity */}
+                        <div className="bg-white rounded-lg shadow-sm mt-4">
+                            <div className="p-4 border-b">
+                                <h2 className="font-semibold text-gray-800">Recent Activity</h2>
+                            </div>
+                            <div className="divide-y">
+                                {getRecentTransactions().slice(0, 5).map((transaction, index) => (
+                                    <div key={index} className="p-4 flex justify-between items-center">
+                                        <div className="flex-1">
+                                            <p className="font-medium text-gray-800 text-sm">{transaction.description}</p>
+                                            <p className="text-xs text-gray-500">{transaction.account} • {formatDateUK(transaction.date)}</p>
+                                        </div>
+                                        <div className={`font-semibold text-sm ${transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {formatCurrency(transaction.amount)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<QuickenMobileApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
