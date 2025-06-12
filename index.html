@@ -249,6 +249,9 @@
                     let allTransactions = [];
                     let filesProcessed = 0;
                     
+                    // Preserve hidden accounts settings during import
+                    const currentHiddenAccounts = new Set(hiddenAccounts);
+                    
                     // Clear existing data when importing new files
                     setAccounts([]);
                     setTransactions([]);
@@ -286,6 +289,8 @@
                                 if (filesProcessed === files.length) {
                                     setAccounts(allAccounts);
                                     setTransactions(allTransactions);
+                                    // Restore hidden accounts settings after import
+                                    setHiddenAccounts(currentHiddenAccounts);
                                     setIsLoading(false);
                                     event.target.value = '';
                                 }
