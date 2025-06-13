@@ -390,51 +390,84 @@
             // Nextcloud Integration Functions
             const NEXTCLOUD_URL = 'https://next.stathams.co.uk';
             const NEXTCLOUD_FOLDER = '/QuickenMobile';
+            const NEXTCLOUD_CLIENT_ID = 'YqFgLSW7sWUjCs80uerQjBrLgSxxCl15nEj7e2X0RCON5BBELkDZ8tGzeu8CAl19'; // Replace with your OAuth Client ID
 
-            const connectToNextcloud = async (username, password) => {
+            const connectToNextcloud = async () => {
                 try {
                     setSyncStatus('Connecting...');
                     
-                    // Test connection by listing files in root
-                    const response = await fetch(`${NEXTCLOUD_URL}/remote.php/webdav/`, {
-                        method: 'PROPFIND',
-                        headers: {
-                            'Authorization': `Basic ${btoa(username + ':' + password)}`,
-                            'Content-Type': 'application/xml',
-                            'Depth': '1'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Invalid credentials or connection failed');
-                    }
-
-                    // Store credentials (in real app, use secure storage)
-                    const credentials = btoa(username + ':' + password);
-                    setNextcloudAuth(credentials);
-                    setSyncStatus('Connected');
-                    setShowNextcloudLogin(false);
+                    // Nextcloud OAuth 2.0 flow
+                    const authUrl = `${NEXTCLOUD_URL}/apps/oauth2/authorize?` +
+                        `response_type=code&` +
+                        `client_id=${NEXTCLOUD_CLIENT_ID}&` +
+                        `redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&` +
+                        `state=nextcloud_auth`;
                     
-                    // Save credentials to localStorage (not ideal for production)
-                    try {
-                        localStorage.setItem('nextcloudAuth', credentials);
-                        localStorage.setItem('nextcloudUser', username);
-                    } catch (e) {
-                        console.log('LocalStorage not available');
-                    }
-
-                    return true;
+                    window.location.href = authUrl;
                 } catch (error) {
-                    console.error('Nextcloud connection error:', error);
+                    console.error('Nextcloud OAuth error:', error);
                     setSyncStatus('Connection failed');
                     alert('Failed to connect to Nextcloud: ' + error.message);
-                    return false;
+                }
+            };
+
+            const handleOAuthCallback = async () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                const state = urlParams.get('state');
+                
+                if (code && state === 'nextcloud_auth') {
+                    try {
+                        setSyncStatus('Authenticating...');
+                        
+                        // Exchange code for access token
+                        const tokenResponse = await fetch(`${NEXTCLOUD_URL}/apps/oauth2/api/v1/token`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({
+                                grant_type: 'authorization_code',
+                                code: code,
+                                client_id: NEXTCLOUD_CLIENT_ID,
+                                redirect_uri: window.location.origin + window.location.pathname
+                            })
+                        });
+                        
+                        if (!tokenResponse.ok) {
+                            throw new Error('Failed to get access token');
+                        }
+                        
+                        const tokenData = await tokenResponse.json();
+                        const accessToken = tokenData.access_token;
+                        
+                        setNextcloudAuth(accessToken);
+                        setSyncStatus('Connected');
+                        
+                        // Save token to localStorage
+                        try {
+                            localStorage.setItem('nextcloudToken', accessToken);
+                        } catch (e) {
+                            console.log('LocalStorage not available');
+                        }
+                        
+                        // Clean up URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        
+                        // Auto-sync after connection
+                        setTimeout(() => syncFromNextcloud(), 1000);
+                        
+                    } catch (error) {
+                        console.error('OAuth token exchange error:', error);
+                        setSyncStatus('Connection failed');
+                        alert('Failed to complete OAuth authentication: ' + error.message);
+                    }
                 }
             };
 
             const syncFromNextcloud = async () => {
                 if (!nextcloudAuth) {
-                    setShowNextcloudLogin(true);
+                    connectToNextcloud();
                     return;
                 }
 
@@ -442,11 +475,11 @@
                     setIsLoading(true);
                     setSyncStatus('Syncing...');
 
-                    // List files in QuickenMobile/Import folder
+                    // List files in QuickenMobile/Import folder using OAuth token
                     const response = await fetch(`${NEXTCLOUD_URL}/remote.php/webdav${NEXTCLOUD_FOLDER}/Import/`, {
                         method: 'PROPFIND',
                         headers: {
-                            'Authorization': `Basic ${nextcloudAuth}`,
+                            'Authorization': `Bearer ${nextcloudAuth}`,
                             'Content-Type': 'application/xml',
                             'Depth': '1'
                         }
@@ -457,6 +490,14 @@
                             alert('QuickenMobile/Import folder not found. Please create this folder in your Nextcloud.');
                             setSyncStatus('Folder not found');
                             setIsLoading(false);
+                            return;
+                        }
+                        if (response.status === 401) {
+                            // Token expired, need to re-authenticate
+                            setNextcloudAuth(null);
+                            localStorage.removeItem('nextcloudToken');
+                            setSyncStatus('Not connected');
+                            connectToNextcloud();
                             return;
                         }
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -497,7 +538,7 @@
                         const fileResponse = await fetch(`${NEXTCLOUD_URL}/remote.php/webdav${NEXTCLOUD_FOLDER}/Import/${encodeURIComponent(fileName)}`, {
                             method: 'GET',
                             headers: {
-                                'Authorization': `Basic ${nextcloudAuth}`
+                                'Authorization': `Bearer ${nextcloudAuth}`
                             }
                         });
 
@@ -543,13 +584,16 @@
                 }
             };
 
-            // Load saved Nextcloud credentials on mount
+            // Load saved Nextcloud credentials and handle OAuth callback
             useEffect(() => {
+                // Check for OAuth callback
+                handleOAuthCallback();
+                
+                // Load saved token
                 try {
-                    const savedAuth = localStorage.getItem('nextcloudAuth');
-                    const savedUser = localStorage.getItem('nextcloudUser');
-                    if (savedAuth && savedUser) {
-                        setNextcloudAuth(savedAuth);
+                    const savedToken = localStorage.getItem('nextcloudToken');
+                    if (savedToken) {
+                        setNextcloudAuth(savedToken);
                         setSyncStatus('Connected');
                     }
                 } catch (e) {
@@ -613,7 +657,7 @@
                 }
             }, []);
 
-            // Nextcloud Login Screen
+            // Nextcloud Login Screen - OAuth Version
             if (showNextcloudLogin) {
                 return (
                     <div className="min-h-screen bg-gray-50">
@@ -634,69 +678,41 @@
                             <div className="bg-white rounded-lg shadow-sm p-6">
                                 <div className="text-center mb-6">
                                     <Cloud className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-                                    <h2 className="text-xl font-bold text-gray-800 mb-2">Nextcloud Sync</h2>
-                                    <p className="text-gray-600 text-sm">Connect to your secure Nextcloud server</p>
+                                    <h2 className="text-xl font-bold text-gray-800 mb-2">Nextcloud OAuth</h2>
+                                    <p className="text-gray-600 text-sm">Secure connection to your Nextcloud server</p>
                                     <p className="text-gray-500 text-xs mt-2">next.stathams.co.uk</p>
                                 </div>
                                 
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const username = e.target.username.value;
-                                    const password = e.target.password.value;
-                                    connectToNextcloud(username, password);
-                                }}>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Username
-                                            </label>
-                                            <input
-                                                name="username"
-                                                type="text"
-                                                required
-                                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Your Nextcloud username"
-                                                autoComplete="username"
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Password
-                                            </label>
-                                            <input
-                                                name="password"
-                                                type="password"
-                                                required
-                                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Your Nextcloud password"
-                                                autoComplete="current-password"
-                                            />
-                                        </div>
-                                        
-                                        <button
-                                            type="submit"
-                                            disabled={isLoading}
-                                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center space-x-2"
-                                        >
-                                            {isLoading ? (
-                                                <RefreshCw className="w-5 h-5 animate-spin" />
-                                            ) : (
-                                                <Cloud className="w-5 h-5" />
-                                            )}
-                                            <span>{isLoading ? 'Connecting...' : 'Connect'}</span>
-                                        </button>
-                                    </div>
-                                </form>
+                                <button
+                                    onClick={connectToNextcloud}
+                                    disabled={isLoading}
+                                    className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center space-x-2"
+                                >
+                                    {isLoading ? (
+                                        <RefreshCw className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <Cloud className="w-5 h-5" />
+                                    )}
+                                    <span>{isLoading ? 'Redirecting...' : 'Connect with OAuth'}</span>
+                                </button>
                                 
                                 <div className="mt-6 text-sm text-gray-500">
                                     <p className="font-medium mb-2">Setup Requirements:</p>
                                     <ul className="space-y-1 text-xs">
-                                        <li>✓ Create QuickenMobile folder in Nextcloud</li>
-                                        <li>✓ Create Import subfolder: QuickenMobile/Import/</li>
+                                        <li>✓ Create OAuth 2.0 client in Nextcloud</li>
+                                        <li>✓ Add your GitHub Pages URL as redirect URI</li>
+                                        <li>✓ Create QuickenMobile/Import/ folder</li>
                                         <li>✓ Export QIF files to Import folder</li>
-                                        <li>🔒 Your credentials are stored locally only</li>
                                     </ul>
+                                    <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+                                        <p className="text-xs text-blue-800 font-medium">OAuth 2.0 Setup:</p>
+                                        <p className="text-xs text-blue-700 mt-1">
+                                            Add this URL as redirect URI in your Nextcloud OAuth client:
+                                        </p>
+                                        <p className="text-xs text-blue-600 mt-1 font-mono break-all">
+                                            {window.location.origin + window.location.pathname}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -817,7 +833,7 @@
                                         </button>
                                     ) : (
                                         <button
-                                            onClick={() => setShowNextcloudLogin(true)}
+                                            onClick={connectToNextcloud}
                                             className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-600"
                                         >
                                             <Cloud className="w-5 h-5" />
