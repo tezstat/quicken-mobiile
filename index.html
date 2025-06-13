@@ -67,6 +67,19 @@
             </svg>
         );
 
+        const Cloud = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+            </svg>
+        );
+
+        const CloudOff = () => (
+            <svg className="lucide" viewBox="0 0 24 24">
+                <path d="M22 15H17.5A4.5 4.5 0 1 0 17.5 6.09a7 7 0 0 0-6.11-5.46A7 7 0 0 0 2 9a7 7 0 0 0 5.5 6.8"/>
+                <path d="M2 2L22 22"/>
+            </svg>
+        );
+
         const RefreshCw = ({ className }) => (
             <svg className={`lucide ${className || ''}`} viewBox="0 0 24 24">
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
@@ -108,6 +121,11 @@
             const [isLoading, setIsLoading] = useState(false);
             const [hiddenAccounts, setHiddenAccounts] = useState(new Set());
             const [showAccountManager, setShowAccountManager] = useState(false);
+            const [nextcloudAuth, setNextcloudAuth] = useState(null);
+            const [lastSyncTime, setLastSyncTime] = useState(null);
+            const [syncStatus, setSyncStatus] = useState('Not connected');
+            const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
+            const [showNextcloudLogin, setShowNextcloudLogin] = useState(false);
 
             // Sample data for demo purposes
             const sampleData = {
@@ -369,6 +387,176 @@
                     .reduce((total, account) => total + account.balance, 0);
             };
 
+            // Nextcloud Integration Functions
+            const NEXTCLOUD_URL = 'https://next.stathams.co.uk';
+            const NEXTCLOUD_FOLDER = '/QuickenMobile';
+
+            const connectToNextcloud = async (username, password) => {
+                try {
+                    setSyncStatus('Connecting...');
+                    
+                    // Test connection by listing files in root
+                    const response = await fetch(`${NEXTCLOUD_URL}/remote.php/webdav/`, {
+                        method: 'PROPFIND',
+                        headers: {
+                            'Authorization': `Basic ${btoa(username + ':' + password)}`,
+                            'Content-Type': 'application/xml',
+                            'Depth': '1'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Invalid credentials or connection failed');
+                    }
+
+                    // Store credentials (in real app, use secure storage)
+                    const credentials = btoa(username + ':' + password);
+                    setNextcloudAuth(credentials);
+                    setSyncStatus('Connected');
+                    setShowNextcloudLogin(false);
+                    
+                    // Save credentials to localStorage (not ideal for production)
+                    try {
+                        localStorage.setItem('nextcloudAuth', credentials);
+                        localStorage.setItem('nextcloudUser', username);
+                    } catch (e) {
+                        console.log('LocalStorage not available');
+                    }
+
+                    return true;
+                } catch (error) {
+                    console.error('Nextcloud connection error:', error);
+                    setSyncStatus('Connection failed');
+                    alert('Failed to connect to Nextcloud: ' + error.message);
+                    return false;
+                }
+            };
+
+            const syncFromNextcloud = async () => {
+                if (!nextcloudAuth) {
+                    setShowNextcloudLogin(true);
+                    return;
+                }
+
+                try {
+                    setIsLoading(true);
+                    setSyncStatus('Syncing...');
+
+                    // List files in QuickenMobile/Import folder
+                    const response = await fetch(`${NEXTCLOUD_URL}/remote.php/webdav${NEXTCLOUD_FOLDER}/Import/`, {
+                        method: 'PROPFIND',
+                        headers: {
+                            'Authorization': `Basic ${nextcloudAuth}`,
+                            'Content-Type': 'application/xml',
+                            'Depth': '1'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            alert('QuickenMobile/Import folder not found. Please create this folder in your Nextcloud.');
+                            setSyncStatus('Folder not found');
+                            setIsLoading(false);
+                            return;
+                        }
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const xmlText = await response.text();
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                    
+                    // Extract file names from WebDAV response
+                    const responses = xmlDoc.getElementsByTagName('d:response');
+                    const qifFiles = [];
+                    
+                    for (let i = 1; i < responses.length; i++) { // Skip first item (folder itself)
+                        const href = responses[i].getElementsByTagName('d:href')[0]?.textContent;
+                        if (href && href.toLowerCase().endsWith('.qif')) {
+                            const fileName = decodeURIComponent(href.split('/').pop());
+                            qifFiles.push(fileName);
+                        }
+                    }
+
+                    if (qifFiles.length === 0) {
+                        alert('No QIF files found in QuickenMobile/Import folder');
+                        setSyncStatus('No files found');
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    // Download and process QIF files
+                    let allAccounts = [];
+                    let allTransactions = [];
+                    const currentHiddenAccounts = new Set(hiddenAccounts);
+                    
+                    setAccounts([]);
+                    setTransactions([]);
+
+                    for (const fileName of qifFiles) {
+                        const fileResponse = await fetch(`${NEXTCLOUD_URL}/remote.php/webdav${NEXTCLOUD_FOLDER}/Import/${encodeURIComponent(fileName)}`, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Basic ${nextcloudAuth}`
+                            }
+                        });
+
+                        if (fileResponse.ok) {
+                            const content = await fileResponse.text();
+                            const parsed = parseQIF(content);
+                            
+                            parsed.accounts.forEach(newAccount => {
+                                const existingIndex = allAccounts.findIndex(acc => acc.name === newAccount.name);
+                                if (existingIndex >= 0) {
+                                    allAccounts[existingIndex] = newAccount;
+                                } else {
+                                    allAccounts.push(newAccount);
+                                }
+                            });
+                            
+                            parsed.transactions.forEach(newTransaction => {
+                                const isDuplicate = allTransactions.some(existing => 
+                                    existing.account === newTransaction.account &&
+                                    existing.date === newTransaction.date &&
+                                    existing.amount === newTransaction.amount &&
+                                    existing.description === newTransaction.description
+                                );
+                                if (!isDuplicate) {
+                                    allTransactions.push(newTransaction);
+                                }
+                            });
+                        }
+                    }
+
+                    setAccounts(allAccounts);
+                    setTransactions(allTransactions);
+                    setHiddenAccounts(currentHiddenAccounts);
+                    setLastSyncTime(new Date().toLocaleString());
+                    setSyncStatus(`Synced ${qifFiles.length} files`);
+                    setIsLoading(false);
+
+                } catch (error) {
+                    console.error('Nextcloud sync error:', error);
+                    setSyncStatus('Sync failed');
+                    setIsLoading(false);
+                    alert('Failed to sync from Nextcloud: ' + error.message);
+                }
+            };
+
+            // Load saved Nextcloud credentials on mount
+            useEffect(() => {
+                try {
+                    const savedAuth = localStorage.getItem('nextcloudAuth');
+                    const savedUser = localStorage.getItem('nextcloudUser');
+                    if (savedAuth && savedUser) {
+                        setNextcloudAuth(savedAuth);
+                        setSyncStatus('Connected');
+                    }
+                } catch (e) {
+                    console.log('LocalStorage not available');
+                }
+            }, []);
+
             const formatCurrency = (amount) => {
                 const isNegative = amount < 0;
                 const formatted = new Intl.NumberFormat('en-GB', {
@@ -424,6 +612,97 @@
                     console.log('LocalStorage not available');
                 }
             }, []);
+
+            // Nextcloud Login Screen
+            if (showNextcloudLogin) {
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="bg-white shadow-sm p-4">
+                            <div className="max-w-md mx-auto flex items-center justify-between">
+                                <button
+                                    onClick={() => setShowNextcloudLogin(false)}
+                                    className="text-blue-500 text-sm font-medium"
+                                >
+                                    ← Back
+                                </button>
+                                <h1 className="font-semibold text-gray-800">Connect to Nextcloud</h1>
+                                <div className="w-12"></div>
+                            </div>
+                        </div>
+                        
+                        <div className="max-w-md mx-auto p-4">
+                            <div className="bg-white rounded-lg shadow-sm p-6">
+                                <div className="text-center mb-6">
+                                    <Cloud className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                                    <h2 className="text-xl font-bold text-gray-800 mb-2">Nextcloud Sync</h2>
+                                    <p className="text-gray-600 text-sm">Connect to your secure Nextcloud server</p>
+                                    <p className="text-gray-500 text-xs mt-2">next.stathams.co.uk</p>
+                                </div>
+                                
+                                <form onSubmit={(e) => {
+                                    e.preventDefault();
+                                    const username = e.target.username.value;
+                                    const password = e.target.password.value;
+                                    connectToNextcloud(username, password);
+                                }}>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Username
+                                            </label>
+                                            <input
+                                                name="username"
+                                                type="text"
+                                                required
+                                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Your Nextcloud username"
+                                                autoComplete="username"
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Password
+                                            </label>
+                                            <input
+                                                name="password"
+                                                type="password"
+                                                required
+                                                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Your Nextcloud password"
+                                                autoComplete="current-password"
+                                            />
+                                        </div>
+                                        
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading}
+                                            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center space-x-2"
+                                        >
+                                            {isLoading ? (
+                                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                            ) : (
+                                                <Cloud className="w-5 h-5" />
+                                            )}
+                                            <span>{isLoading ? 'Connecting...' : 'Connect'}</span>
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <div className="mt-6 text-sm text-gray-500">
+                                    <p className="font-medium mb-2">Setup Requirements:</p>
+                                    <ul className="space-y-1 text-xs">
+                                        <li>✓ Create QuickenMobile folder in Nextcloud</li>
+                                        <li>✓ Create Import subfolder: QuickenMobile/Import/</li>
+                                        <li>✓ Export QIF files to Import folder</li>
+                                        <li>🔒 Your credentials are stored locally only</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
 
             // Account Manager Screen
             if (showAccountManager) {
@@ -624,6 +903,28 @@
                             <div className="flex items-center justify-between mb-4">
                                 <h1 className="text-lg font-bold text-gray-800">Quicken Mobile</h1>
                                 <div className="flex items-center space-x-2">
+                                    {nextcloudAuth ? (
+                                        <button
+                                            onClick={syncFromNextcloud}
+                                            disabled={isLoading}
+                                            className="text-green-500 p-1 hover:bg-green-50 rounded"
+                                            title="Sync from Nextcloud"
+                                        >
+                                            {isLoading ? (
+                                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                            ) : (
+                                                <Cloud className="w-5 h-5" />
+                                            )}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowNextcloudLogin(true)}
+                                            className="text-gray-400 p-1 hover:bg-gray-50 rounded"
+                                            title="Connect to Nextcloud"
+                                        >
+                                            <CloudOff className="w-5 h-5" />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => setShowAccountManager(true)}
                                         className="text-blue-500 p-1 hover:bg-blue-50 rounded"
@@ -653,10 +954,20 @@
                             
                             {/* Net Worth Card */}
                             <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-                                <p className="text-sm opacity-90">Total Net Worth ({filteredAccounts.length} accounts)</p>
-                                <p className="text-2xl font-bold">{formatCurrency(getTotalNetWorth())}</p>
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p className="text-sm opacity-90">Total Net Worth ({filteredAccounts.length} accounts)</p>
+                                        <p className="text-2xl font-bold">{formatCurrency(getTotalNetWorth())}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs opacity-75">{syncStatus}</p>
+                                        {lastSyncTime && (
+                                            <p className="text-xs opacity-75">Last: {lastSyncTime}</p>
+                                        )}
+                                    </div>
+                                </div>
                                 {hiddenAccounts.size > 0 && (
-                                    <p className="text-xs opacity-75 mt-1">{hiddenAccounts.size} accounts hidden</p>
+                                    <p className="text-xs opacity-75">{hiddenAccounts.size} accounts hidden</p>
                                 )}
                             </div>
                         </div>
