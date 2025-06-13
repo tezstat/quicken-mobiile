@@ -802,10 +802,37 @@
                                 <p className="text-gray-600 mb-6">Import your Quicken data to get started</p>
                                 
                                 <div className="space-y-4">
+                                    {nextcloudAuth ? (
+                                        <button
+                                            onClick={syncFromNextcloud}
+                                            disabled={isLoading}
+                                            className="w-full bg-green-500 text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 hover:bg-green-600 disabled:opacity-50"
+                                        >
+                                            {isLoading ? (
+                                                <RefreshCw className="w-5 h-5 animate-spin" />
+                                            ) : (
+                                                <Cloud className="w-5 h-5" />
+                                            )}
+                                            <span>{isLoading ? 'Syncing...' : 'Sync from Nextcloud'}</span>
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowNextcloudLogin(true)}
+                                            className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-600"
+                                        >
+                                            <Cloud className="w-5 h-5" />
+                                            <span>Connect to Nextcloud</span>
+                                        </button>
+                                    )}
+                                    
+                                    <div className="text-center text-gray-500 text-sm">
+                                        <span>or</span>
+                                    </div>
+                                    
                                     <button
                                         onClick={triggerFileInput}
                                         disabled={isLoading}
-                                        className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-600 disabled:opacity-50"
+                                        className="w-full bg-gray-500 text-white py-3 px-4 rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-600 disabled:opacity-50"
                                     >
                                         {isLoading ? (
                                             <RefreshCw className="w-5 h-5 animate-spin" />
@@ -827,7 +854,10 @@
                                 </div>
                                 
                                 <div className="mt-6 text-sm text-gray-500">
-                                    <p>Export your Quicken data as QIF format:</p>
+                                    <p className="font-medium mb-2">Nextcloud Sync:</p>
+                                    <p className="text-xs mb-3">Connect to your secure Nextcloud server for automatic sync</p>
+                                    <p className="font-medium mb-2">Manual Import:</p>
+                                    <p className="text-xs">Export your Quicken data as QIF format:</p>
                                     <p className="font-mono text-xs mt-1">File → Export → QIF Files</p>
                                     <p className="text-xs mt-2">💡 You can select multiple QIF files to merge them!</p>
                                 </div>
